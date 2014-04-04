@@ -7,7 +7,7 @@ Installation Instruction (For Arduino IDE version 1.0.5 and above):
 
 2. In the Arduino IDE, select Sketch -> Import Library -> Add Library
 
-3. Navigate to the zip file that was just downloaded - Audio_Shield.zip, and Click Open.
+3. Navigate to the zip file that was just downloaded - UART_Bridge.zip, and Click Open.
 
 4. Return to the Sketch -> Import Library menu. You should now see the library at the bottom of the drop-down menu. It is ready to be used in your sketch.
 
