@@ -1,6 +1,8 @@
 Arduino Library for Sandbox Electronics I2C/SPI to UART Bridge Module [MOD-000020]
 ==================================================================================
 
+This module is available at http://sandboxelectronics.com/?product=sc16is750-i2cspi-to-uart-bridge-module
+
 Installation Instruction (For Arduino IDE version 1.0.5 and above):
 
 1. Download the library as an Arduino IDE compatible zip file at https://github.com/SandboxElectronics/UART_Bridge/blob/master/UART_Bridge.zip?raw=true. (Do not unzip it. leave it as is)
