@@ -1,5 +1,5 @@
-Arduino Library for Sandbox Electronics SC16IS750 I2C/SPI to UART Bridge Module [MOD-000020]
-============================================================================================
+Arduino Library for Sandbox Electronics I2C/SPI to UART Bridge Module [MOD-000020]
+==================================================================================
 
 Installation Instruction (For Arduino IDE version 1.0.5 and above):
 
