@@ -22,7 +22,9 @@ Please keep the above information when you use this code in your project.
 
 
 #include <SC16IS750.h>
+#include <SPI.h>
 #include <Wire.h>
+
 
 #ifdef __AVR__
  #define WIRE Wire
@@ -31,10 +33,14 @@ Please keep the above information when you use this code in your project.
 #endif
 
 
-SC16IS750::SC16IS750(uint8_t prtcl, uint8_t addr)
+SC16IS750::SC16IS750(uint8_t prtcl, uint8_t addr_sspin)
 {
     protocol = prtcl;
-    device_address = (addr>>1);
+    if ( protocol == SC16IS750_PROTOCOL_I2C ) {
+		device_address_sspin = (addr_sspin>>1);
+	} else {
+		device_address_sspin = addr_sspin;
+	}
 	peek_flag = 0;
 //	timeout = 1000;
 }
@@ -42,9 +48,22 @@ SC16IS750::SC16IS750(uint8_t prtcl, uint8_t addr)
 
 void SC16IS750::begin(uint32_t baud) 
 {
-    if ( protocol == SC16IS750_PROTOCOL_I2C) {
+    //Serial.println("1111111111111111");
+	if ( protocol == SC16IS750_PROTOCOL_I2C) {
+	//Serial.println("22222222222222");
         WIRE.begin();
-    };
+    } else {
+	//Serial.println("3333333333333333333");
+		::pinMode(device_address_sspin, OUTPUT);
+   	    ::digitalWrite(device_address_sspin, HIGH);
+		SPI.setDataMode(SPI_MODE0);
+		SPI.setClockDivider(SPI_CLOCK_DIV4);
+		SPI.setBitOrder(MSBFIRST);
+		SPI.begin();
+		//SPI.setClockDivider(32);
+		
+	//Serial.println("4444444444444444444");
+	};
     ResetDevice();
 	SetBaudrate(baud);
     SetLine(8,0,1);
@@ -88,27 +107,43 @@ uint8_t SC16IS750::digitalRead(uint8_t pin)
 
 uint8_t SC16IS750::ReadRegister(uint8_t reg_addr)
 {
-    WIRE.beginTransmission(device_address);
-    WIRE.write((reg_addr<<3));
-    WIRE.endTransmission(0);
-//#ifdef  SC16IS750_DEBUG_PRINT 
-//    Serial.print("Reading register ");
-//    Serial.println((reg_addr<<3));
-//#endif 
-    WIRE.requestFrom(device_address,(uint8_t)1);
-//#ifdef  SC16IS750_DEBUG_PRINT
-//    Serial.print("Total available data: ");
-//    Serial.println(Wire.available());
-//#endif
-    return (WIRE.read());
+    uint8_t result;
+	if ( protocol == SC16IS750_PROTOCOL_I2C ) {  // register read operation via I2C
+	
+		WIRE.beginTransmission(device_address_sspin);
+		WIRE.write((reg_addr<<3));
+		WIRE.endTransmission(0);
+		WIRE.requestFrom(device_address_sspin,(uint8_t)1);
+		result = WIRE.read();
+	} else if (protocol == SC16IS750_PROTOCOL_SPI) {                                   //register read operation via SPI
+		::digitalWrite(device_address_sspin, LOW);
+		delayMicroseconds(10);
+		SPI.transfer(0x80|(reg_addr<<3));
+		result = SPI.transfer(0xff);
+		delayMicroseconds(10);
+		::digitalWrite(device_address_sspin, HIGH);
+	}
+	
+	return result;
+ 	
 }
 
 void SC16IS750::WriteRegister(uint8_t reg_addr, uint8_t val)
 {
-    WIRE.beginTransmission(device_address);
-    WIRE.write((reg_addr<<3));
-    WIRE.write(val);
-    WIRE.endTransmission(1);
+    if ( protocol == SC16IS750_PROTOCOL_I2C ) {  // register read operation via I2C
+		WIRE.beginTransmission(device_address_sspin);
+		WIRE.write((reg_addr<<3));
+		WIRE.write(val);
+		WIRE.endTransmission(1);
+	} else {
+		::digitalWrite(device_address_sspin, LOW);
+		delayMicroseconds(10); 
+		SPI.transfer(reg_addr<<3);
+		SPI.transfer(val);
+		delayMicroseconds(10); 
+		::digitalWrite(device_address_sspin, HIGH);
+		
+	}
     
     
     return ;

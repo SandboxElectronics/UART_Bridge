@@ -132,7 +132,7 @@ class SC16IS750 : public Stream
         
     
     private:
-        uint8_t device_address;
+        uint8_t device_address_sspin;
         uint8_t protocol;
 	//	uint32_t timeout;
         int16_t SetBaudrate(uint32_t baudrate);
