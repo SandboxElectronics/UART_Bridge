@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <SC16IS750.h>
 #include <string.h>
-
+#include <SPI.h>
 
 SC16IS750 i2cuart = SC16IS750(SC16IS750_PROTOCOL_I2C,SC16IS750_ADDRESS_AD);
 
