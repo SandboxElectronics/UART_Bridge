@@ -1,7 +1,7 @@
-/* 
+/*
 Description:
 This is a example code for Sandbox Electronics' I2C/SPI to UART bridge module.
-You can get one of those products on 
+You can get one of those products on
 http://sandboxelectronics.com
 
 Version:
@@ -16,11 +16,11 @@ Tiequan Shao          info@sandboxelectronics.com
 Lisence:
 CC BY-NC-SA 3.0
 
-Please keep the above information when you use this code in your project. 
+Please keep the above information when you use this code in your project.
 */
 
 
-
+//#define SC16IS750_DEBUG_PRINT
 #include <SC16IS750.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -46,7 +46,7 @@ SC16IS750::SC16IS750(uint8_t prtcl, uint8_t addr_sspin)
 }
 
 
-void SC16IS750::begin(uint32_t baud) 
+void SC16IS750::begin(uint32_t baud)
 {
     //Serial.println("1111111111111111");
 	if ( protocol == SC16IS750_PROTOCOL_I2C) {
@@ -61,17 +61,18 @@ void SC16IS750::begin(uint32_t baud)
 		SPI.setBitOrder(MSBFIRST);
 		SPI.begin();
 		//SPI.setClockDivider(32);
-		
+
 	//Serial.println("4444444444444444444");
 	};
     ResetDevice();
+    FIFOEnable(1);
 	SetBaudrate(baud);
     SetLine(8,0,1);
 }
 
 int SC16IS750::available(void)
 {
-    return FIFOAvailableData(); 
+    return FIFOAvailableData();
 }
 
 int SC16IS750::read(void)
@@ -91,7 +92,7 @@ size_t SC16IS750::write(uint8_t val)
 
 void SC16IS750::pinMode(uint8_t pin, uint8_t i_o)
 {
-    GPIOSetPinMode(pin, i_o);  
+    GPIOSetPinMode(pin, i_o);
 }
 
 void SC16IS750::digitalWrite(uint8_t pin, uint8_t value)
@@ -109,7 +110,7 @@ uint8_t SC16IS750::ReadRegister(uint8_t reg_addr)
 {
     uint8_t result;
 	if ( protocol == SC16IS750_PROTOCOL_I2C ) {  // register read operation via I2C
-	
+
 		WIRE.beginTransmission(device_address_sspin);
 		WIRE.write((reg_addr<<3));
 		WIRE.endTransmission(0);
@@ -123,9 +124,9 @@ uint8_t SC16IS750::ReadRegister(uint8_t reg_addr)
 		delayMicroseconds(10);
 		::digitalWrite(device_address_sspin, HIGH);
 	}
-	
+
 	return result;
- 	
+
 }
 
 void SC16IS750::WriteRegister(uint8_t reg_addr, uint8_t val)
@@ -137,15 +138,15 @@ void SC16IS750::WriteRegister(uint8_t reg_addr, uint8_t val)
 		WIRE.endTransmission(1);
 	} else {
 		::digitalWrite(device_address_sspin, LOW);
-		delayMicroseconds(10); 
+		delayMicroseconds(10);
 		SPI.transfer(reg_addr<<3);
 		SPI.transfer(val);
-		delayMicroseconds(10); 
+		delayMicroseconds(10);
 		::digitalWrite(device_address_sspin, HIGH);
-		
+
 	}
-    
-    
+
+
     return ;
 }
 
@@ -161,35 +162,35 @@ int16_t SC16IS750::SetBaudrate(uint32_t baudrate) //return error of baudrate par
     } else {
         prescaler = 4;
     }
-    
+
     divisor = (SC16IS750_CRYSTCAL_FREQ/prescaler)/(baudrate*16);
 
     temp_lcr = ReadRegister(SC16IS750_REG_LCR);
     temp_lcr |= 0x80;
-    WriteRegister(SC16IS750_REG_LCR,temp_lcr); 
+    WriteRegister(SC16IS750_REG_LCR,temp_lcr);
     //write to DLL
     WriteRegister(SC16IS750_REG_DLL,(uint8_t)divisor);
     //write to DLH
     WriteRegister(SC16IS750_REG_DLH,(uint8_t)(divisor>>8));
     temp_lcr &= 0x7F;
-    WriteRegister(SC16IS750_REG_LCR,temp_lcr); 
+    WriteRegister(SC16IS750_REG_LCR,temp_lcr);
 
-    
+
     actual_baudrate = (SC16IS750_CRYSTCAL_FREQ/prescaler)/(16*divisor);
     error = ((float)actual_baudrate-baudrate)*1000/baudrate;
-#ifdef  SC16IS750_DEBUG_PRINT   
+#ifdef  SC16IS750_DEBUG_PRINT
     Serial.print("Desired baudrate: ");
     Serial.println(baudrate,DEC);
     Serial.print("Calculated divisor: ");
     Serial.println(divisor,DEC);
     Serial.print("Actual baudrate: ");
-    Serial.println(actual_baudrate,DEC);    
+    Serial.println(actual_baudrate,DEC);
     Serial.print("Baudrate error: ");
-    Serial.println(error,DEC);    
-#endif     
-    
+    Serial.println(error,DEC);
+#endif
+
     return error;
- 
+
 }
 
 void SC16IS750::SetLine(uint8_t data_length, uint8_t parity_select, uint8_t stop_length )
@@ -197,10 +198,10 @@ void SC16IS750::SetLine(uint8_t data_length, uint8_t parity_select, uint8_t stop
     uint8_t temp_lcr;
     temp_lcr = ReadRegister(SC16IS750_REG_LCR);
     temp_lcr &= 0xC0; //Clear the lower six bit of LCR (LCR[0] to LCR[5]
-#ifdef  SC16IS750_DEBUG_PRINT 
+#ifdef  SC16IS750_DEBUG_PRINT
     Serial.print("LCR Register:0x");
     Serial.println(temp_lcr,DEC);
-#endif   
+#endif
     switch (data_length) {            //data length settings
         case 5:
             break;
@@ -221,7 +222,7 @@ void SC16IS750::SetLine(uint8_t data_length, uint8_t parity_select, uint8_t stop
     if ( stop_length == 2 ) {
         temp_lcr |= 0x04;
     }
-    
+
     switch (parity_select) {            //parity selection length settings
         case 0:                         //no parity
              break;
@@ -238,22 +239,22 @@ void SC16IS750::SetLine(uint8_t data_length, uint8_t parity_select, uint8_t stop
             break;
         default:
             break;
-    } 
-    
+    }
+
     WriteRegister(SC16IS750_REG_LCR,temp_lcr);
 }
 
 void SC16IS750::GPIOSetPinMode(uint8_t pin_number, uint8_t i_o)
 {
     uint8_t temp_iodir;
-    
+
     temp_iodir = ReadRegister(SC16IS750_REG_IODIR);
     if ( i_o == OUTPUT ) {
       temp_iodir |= (0x01 << pin_number);
     } else {
       temp_iodir &= (uint8_t)~(0x01 << pin_number);
-    } 
-    
+    }
+
     WriteRegister(SC16IS750_REG_IODIR, temp_iodir);
     return;
 }
@@ -261,14 +262,14 @@ void SC16IS750::GPIOSetPinMode(uint8_t pin_number, uint8_t i_o)
 void SC16IS750::GPIOSetPinState(uint8_t pin_number, uint8_t pin_state)
 {
     uint8_t temp_iostate;
-    
+
     temp_iostate = ReadRegister(SC16IS750_REG_IOSTATE);
     if ( pin_state == 1 ) {
       temp_iostate |= (0x01 << pin_number);
     } else {
       temp_iostate &= (uint8_t)~(0x01 << pin_number);
-    } 
-    
+    }
+
     WriteRegister(SC16IS750_REG_IOSTATE, temp_iostate);
     return;
 }
@@ -277,17 +278,17 @@ void SC16IS750::GPIOSetPinState(uint8_t pin_number, uint8_t pin_state)
 uint8_t SC16IS750::GPIOGetPinState(uint8_t pin_number)
 {
     uint8_t temp_iostate;
-    
+
     temp_iostate = ReadRegister(SC16IS750_REG_IOSTATE);
     if ( temp_iostate & (0x01 << pin_number)== 0 ) {
       return 0;
-    } 
+    }
     return 1;
 }
 
 uint8_t SC16IS750::GPIOGetPortState(void)
 {
-    
+
     return ReadRegister(SC16IS750_REG_IOSTATE);
 
 }
@@ -307,18 +308,18 @@ void SC16IS750::GPIOSetPortState(uint8_t port_state)
 void SC16IS750::SetPinInterrupt(uint8_t io_int_ena)
 {
     WriteRegister(SC16IS750_REG_IOINTENA, io_int_ena);
-    return;  
+    return;
 }
 
 void SC16IS750::ResetDevice(void)
 {
-    uint8_t temp_iocontrol;
+    uint8_t reg;
 
-    temp_iocontrol = ReadRegister(SC16IS750_REG_IOCONTROL);
-    temp_iocontrol |= 0x08;
-    WriteRegister(SC16IS750_REG_IOCONTROL, temp_iocontrol); 
-    
-    return; 
+    reg = ReadRegister(SC16IS750_REG_IOCONTROL);
+    reg |= 0x08;
+    WriteRegister(SC16IS750_REG_IOCONTROL, reg);
+
+    return;
 }
 
 void SC16IS750::ModemPin(uint8_t gpio) //gpio == 0, gpio[7:4] are modem pins, gpio == 1 gpio[7:4] are gpios
@@ -331,8 +332,8 @@ void SC16IS750::ModemPin(uint8_t gpio) //gpio == 0, gpio[7:4] are modem pins, gp
     } else {
         temp_iocontrol &= 0xFD;
     }
-    WriteRegister(SC16IS750_REG_IOCONTROL, temp_iocontrol); 
-    
+    WriteRegister(SC16IS750_REG_IOCONTROL, temp_iocontrol);
+
     return;
 }
 
@@ -342,18 +343,18 @@ void SC16IS750::GPIOLatch(uint8_t latch)
 
     temp_iocontrol = ReadRegister(SC16IS750_REG_IOCONTROL);
     if ( latch == 0 ) {
-        temp_iocontrol &= 0xFE;  
+        temp_iocontrol &= 0xFE;
     } else {
-        temp_iocontrol |= 0x01;    
+        temp_iocontrol |= 0x01;
     }
-    WriteRegister(SC16IS750_REG_IOCONTROL, temp_iocontrol); 
-    
+    WriteRegister(SC16IS750_REG_IOCONTROL, temp_iocontrol);
+
     return;
 }
 
 void SC16IS750::InterruptControl(uint8_t int_ena)
 {
-    WriteRegister(SC16IS750_REG_IER, int_ena);   
+    WriteRegister(SC16IS750_REG_IER, int_ena);
 }
 
 uint8_t SC16IS750::InterruptPendingTest(void)
@@ -364,11 +365,11 @@ uint8_t SC16IS750::InterruptPendingTest(void)
 void SC16IS750::__isr(void)
 {
     uint8_t irq_src;
-    
+
     irq_src = ReadRegister(SC16IS750_REG_IIR);
     irq_src = (irq_src >> 1);
     irq_src &= 0x3F;
-    
+
     switch (irq_src) {
         case 0x06:                  //Receiver Line Status Error
             break;
@@ -380,59 +381,59 @@ void SC16IS750::__isr(void)
             break;
         case 0x00:                  //modem interrupt;
             break;
-        case 0x30:                  //input pin change of state 
+        case 0x30:                  //input pin change of state
             break;
         case 0x10:                  //XOFF
-            break;            
+            break;
         case 0x20:                  //CTS,RTS
-            break;                
+            break;
         default:
             break;
-    } 
+    }
     return;
 }
 
 void SC16IS750::FIFOEnable(uint8_t fifo_enable)
 {
     uint8_t temp_fcr;
-    
+
     temp_fcr = ReadRegister(SC16IS750_REG_FCR);
-    
+
     if (fifo_enable == 0){
         temp_fcr &= 0xFE;
     } else {
         temp_fcr |= 0x01;
     }
     WriteRegister(SC16IS750_REG_FCR,temp_fcr);
-    
+
     return;
 }
 
 void SC16IS750::FIFOReset(uint8_t rx_fifo)
 {
      uint8_t temp_fcr;
-    
+
     temp_fcr = ReadRegister(SC16IS750_REG_FCR);
-    
+
     if (rx_fifo == 0){
         temp_fcr |= 0x04;
     } else {
         temp_fcr |= 0x02;
     }
-    WriteRegister(SC16IS750_REG_FCR,temp_fcr); 
-    
+    WriteRegister(SC16IS750_REG_FCR,temp_fcr);
+
     return;
-  
+
 }
 
 void SC16IS750::FIFOSetTriggerLevel(uint8_t rx_fifo, uint8_t length)
 {
     uint8_t temp_reg;
-    
+
     temp_reg = ReadRegister(SC16IS750_REG_MCR);
     temp_reg |= 0x04;
     WriteRegister(SC16IS750_REG_MCR,temp_reg); //SET MCR[2] to '1' to use TLR register or trigger level control in FCR register
-    
+
     temp_reg = ReadRegister(SC16IS750_REG_EFR);
     WriteRegister(SC16IS750_REG_EFR, temp_reg|0x10); //set ERF[4] to '1' to use the  enhanced features
     if (rx_fifo == 0) {
@@ -441,17 +442,18 @@ void SC16IS750::FIFOSetTriggerLevel(uint8_t rx_fifo, uint8_t length)
         WriteRegister(SC16IS750_REG_TLR, length);    //Rx FIFO Trigger level setting
     }
     WriteRegister(SC16IS750_REG_EFR, temp_reg); //restore EFR register
-    
+
     return;
 }
 
 uint8_t SC16IS750::FIFOAvailableData(void)
 {
-#ifdef  SC16IS750_DEBUG_PRINT 
+#ifdef  SC16IS750_DEBUG_PRINT
     Serial.print("=====Available data:");
     Serial.println(ReadRegister(SC16IS750_REG_RXLVL), DEC);
-#endif      
+#endif
    return ReadRegister(SC16IS750_REG_RXLVL);
+//    return ReadRegister(SC16IS750_REG_LSR) & 0x01;
 }
 
 uint8_t SC16IS750::FIFOAvailableSpace(void)
@@ -464,45 +466,45 @@ void SC16IS750::WriteByte(uint8_t val)
 {
 	uint8_t tmp_lsr;
  /*   while ( FIFOAvailableSpace() == 0 ){
-#ifdef  SC16IS750_DEBUG_PRINT 
+#ifdef  SC16IS750_DEBUG_PRINT
 		Serial.println("No available space");
-#endif  	
-	
+#endif
+
 	};
 
-#ifdef  SC16IS750_DEBUG_PRINT 
+#ifdef  SC16IS750_DEBUG_PRINT
     Serial.println("++++++++++++Data sent");
-#endif          
+#endif
     WriteRegister(SC16IS750_REG_THR,val);
 */
-	do { 
+	do {
 		tmp_lsr = ReadRegister(SC16IS750_REG_LSR);
 	} while ((tmp_lsr&0x20) ==0);
-	
-	WriteRegister(SC16IS750_REG_THR,val);
-	
 
-    
+	WriteRegister(SC16IS750_REG_THR,val);
+
+
+
 }
 
 int SC16IS750::ReadByte(void)
 {
 	volatile uint8_t val;
 	if (FIFOAvailableData() == 0) {
-#ifdef  SC16IS750_DEBUG_PRINT 
+#ifdef  SC16IS750_DEBUG_PRINT
 	Serial.println("No data available");
-#endif          
+#endif
 		return -1;
-		
+
 	} else {
-	  
-#ifdef  SC16IS750_DEBUG_PRINT 
+
+#ifdef  SC16IS750_DEBUG_PRINT
 	Serial.println("***********Data available***********");
-#endif   
+#endif
 	  val = ReadRegister(SC16IS750_REG_RHR);
 	  return val;
 	}
-	
+
 
 }
 
@@ -511,12 +513,12 @@ void SC16IS750::EnableTransmit(uint8_t tx_enable)
     uint8_t temp_efcr;
     temp_efcr = ReadRegister(SC16IS750_REG_EFCR);
     if ( tx_enable == 0) {
-        temp_efcr |= 0x04;       
-    } else {   
+        temp_efcr |= 0x04;
+    } else {
         temp_efcr &= 0xFB;
-    }   
+    }
     WriteRegister(SC16IS750_REG_EFCR,temp_efcr);
-    
+
     return;
 }
 
@@ -545,7 +547,7 @@ size_t SC16IS750::readBytes(char *buffer, size_t length)
 {
 	size_t count=0;
 	int16_t tmp;
-	
+
 	while (count < length) {
 		tmp = readwithtimeout();
 		if (tmp < 0) {
@@ -554,7 +556,7 @@ size_t SC16IS750::readBytes(char *buffer, size_t length)
 		*buffer++ = (char)tmp;
 		count++;
 	}
-	
+
 	return count;
 }
 
@@ -574,8 +576,8 @@ int16_t SC16IS750::readwithtimeout()
 void SC16IS750::flush()
 {
 	uint8_t tmp_lsr;
-	
-	do { 
+
+	do {
 		tmp_lsr = ReadRegister(SC16IS750_REG_LSR);
 	} while ((tmp_lsr&0x20) ==0);
 
@@ -584,21 +586,13 @@ void SC16IS750::flush()
 
 int SC16IS750:: peek()
 {
-	if ( peek_flag == 0 ) {	
+	if ( peek_flag == 0 ) {
 		peek_buf =ReadByte();
-		if (  peek_buf >= 0 ) { 
+		if (  peek_buf >= 0 ) {
 			peek_flag = 1;
 		}
-	} 
-	
+	}
+
 	return peek_buf;
-		
+
 }
-
-
-
-
-
-
-    
-    
