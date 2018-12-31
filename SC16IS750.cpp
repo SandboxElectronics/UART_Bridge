@@ -28,6 +28,8 @@ Please keep the above information when you use this code in your project.
 
 #ifdef __AVR__
  #define WIRE Wire
+#elif defined(ARDUINO_ARCH_STM32)
+ #define WIRE Wire
 #else // Arduino Due
  #define WIRE Wire1
 #endif
