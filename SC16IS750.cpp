@@ -28,10 +28,20 @@ Please keep the above information when you use this code in your project.
 
 #ifdef __AVR__
  #define WIRE Wire
+ #define WIRE_END_TRANSMISSION_0 0
+ #define WIRE_END_TRANSMISSION_1 1
 #elif defined(ARDUINO_ARCH_STM32)
  #define WIRE Wire
+ #define WIRE_END_TRANSMISSION_0 0
+ #define WIRE_END_TRANSMISSION_1 1
+#elif defined(ESP32)
+ #define WIRE Wire
+ #define WIRE_END_TRANSMISSION_0 false
+ #define WIRE_END_TRANSMISSION_1 true
 #else // Arduino Due
  #define WIRE Wire1
+ #define WIRE_END_TRANSMISSION_0 0
+ #define WIRE_END_TRANSMISSION_1 1
 #endif
 
 
@@ -115,7 +125,7 @@ uint8_t SC16IS750::ReadRegister(uint8_t reg_addr)
 
 		WIRE.beginTransmission(device_address_sspin);
 		WIRE.write((reg_addr<<3));
-		WIRE.endTransmission(0);
+		WIRE.endTransmission(WIRE_END_TRANSMISSION_0);
 		WIRE.requestFrom(device_address_sspin,(uint8_t)1);
 		result = WIRE.read();
 	} else if (protocol == SC16IS750_PROTOCOL_SPI) {                                   //register read operation via SPI
@@ -137,7 +147,7 @@ void SC16IS750::WriteRegister(uint8_t reg_addr, uint8_t val)
 		WIRE.beginTransmission(device_address_sspin);
 		WIRE.write((reg_addr<<3));
 		WIRE.write(val);
-		WIRE.endTransmission(1);
+		WIRE.endTransmission(WIRE_END_TRANSMISSION_1);
 	} else {
 		::digitalWrite(device_address_sspin, LOW);
 		delayMicroseconds(10);
