@@ -104,14 +104,26 @@ enum class SC16IS750_ComProtocol {SPI = 0, I2C = 1};
 class SC16IS750 : public Stream
 { 
     public:
+
+        //NB: we're limited to 64 chars (bytes) by the size of the FIFO buffer
+        char rxData[64]; //this uses a preallocated char array for reading strings from the bridge
+    
         SC16IS750(SC16IS750_ComProtocol prtcl = SC16IS750_ComProtocol::I2C,
                   uint8_t addr = SC16IS750_ADDRESS_AD,
                   unsigned long freq = 12000000UL);
         
         void begin(uint32_t baud);                               
-        int read();
-        size_t write(uint8_t val);
-        int available();
+
+		//Read/Write single values
+		int read();
+		size_t write(uint8_t val);
+		
+		//Read/Write strings
+		//NB: limited to 64 bytes (characters) long string - FIFO buffer limit
+        void writeString(const char* str);
+		void readString();
+        
+		int available();
         void pinMode(uint8_t pin, uint8_t io);
         void digitalWrite(uint8_t pin, uint8_t value);
         uint8_t digitalRead(uint8_t pin);

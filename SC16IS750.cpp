@@ -21,7 +21,7 @@ Please keep the above information when you use this code in your project.
 
 
 //#define SC16IS750_DEBUG_PRINT
-#include <SC16IS750.h>
+#include "SC16IS750.h"
 #include <SPI.h>
 #include <Wire.h>
 
@@ -92,6 +92,34 @@ int SC16IS750::read(void)
 size_t SC16IS750::write(uint8_t val)
 {
     WriteByte(val);
+}
+
+//NB: any character after the 64th will be discarded by the FIFO buffer
+void SC16IS750::writeString(const char* str)
+{
+    for (const char* ch = str; *ch != '\0'; ch++)
+        write((size_t)(*ch)); //write value to device
+}
+
+//NB: we're limited to 64 chars (bytes) by the size of the FIFO buffer
+//This function reads into a preallocated char[] to save on dynamic memory allocations
+void SC16IS750::readString()
+{
+	  int i = 0;
+    while (i < 64)
+    {
+        int datum = read();
+
+        if (datum == -1)
+        {
+            rxData[i] = 0;
+            break; //no more data
+        }
+		
+        else
+            rxData[i++] = (char)datum; //append to string
+            
+    };
 }
 
 void SC16IS750::pinMode(uint8_t pin, uint8_t i_o)
