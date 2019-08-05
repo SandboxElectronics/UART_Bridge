@@ -100,17 +100,14 @@ Please keep the above information when you use this code in your project.
 #define     SC16IS750_CRYSTCAL_FREQ (14745600UL) 
 //#define 	SC16IS750_CRYSTCAL_FREQ (1843200UL)	  
 //#define     SC16IS750_CRYSTCAL_FREQ (16000000UL)    
-//#define     SC16IS750_DEBUG_PRINT   (0)
-#define     SC16IS750_PROTOCOL_I2C  (0)
-#define     SC16IS750_PROTOCOL_SPI  (1)
+//#define   SC16IS750_DEBUG_PRINT   (0)
 
-
-
+enum class SC16IS750_ComProtocol {SPI = 0, I2C = 1};
 
 class SC16IS750 : public Stream
 { 
     public:
-        SC16IS750(uint8_t prtcl = SC16IS750_PROTOCOL_I2C, uint8_t addr = SC16IS750_ADDRESS_AD);
+        SC16IS750(SC16IS750_ComProtocol prtcl = SC16IS750_ComProtocol::I2C, uint8_t addr = SC16IS750_ADDRESS_AD);
         void begin(uint32_t baud);                               
         int read();
         size_t write(uint8_t val);
@@ -133,7 +130,7 @@ class SC16IS750 : public Stream
     
     private:
         uint8_t device_address_sspin;
-        uint8_t protocol;
+        SC16IS750_ComProtocol protocol;
 	//	uint32_t timeout;
         int16_t SetBaudrate(uint32_t baudrate);
         uint8_t ReadRegister(uint8_t reg_addr);
