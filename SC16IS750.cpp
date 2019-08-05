@@ -92,6 +92,8 @@ int SC16IS750::read(void)
 size_t SC16IS750::write(uint8_t val)
 {
     WriteByte(val);
+
+    return 1; //we just wrote one byte
 }
 
 //NB: any character after the 64th will be discarded by the FIFO buffer
@@ -140,15 +142,16 @@ uint8_t SC16IS750::digitalRead(uint8_t pin)
 
 uint8_t SC16IS750::ReadRegister(uint8_t reg_addr)
 {
-    uint8_t result;
-	if ( protocol == SC16IS750_ComProtocol::I2C ) {  // register read operation via I2C
-
+    uint8_t result = -1; //default value to clear warning - in fact we don't support other protocols
+    
+	  if ( protocol == SC16IS750_ComProtocol::I2C ){  // register read operation via I2C
 		WIRE.beginTransmission(device_address_sspin);
 		WIRE.write((reg_addr<<3));
 		WIRE.endTransmission(0);
 		WIRE.requestFrom(device_address_sspin,(uint8_t)1);
 		result = WIRE.read();
-	} else if (protocol == SC16IS750_ComProtocol::SPI) {                                   //register read operation via SPI
+   
+	} else if (protocol == SC16IS750_ComProtocol::SPI) { //register read operation via SPI
 		::digitalWrite(device_address_sspin, LOW);
 		delayMicroseconds(10);
 		SPI.transfer(0x80|(reg_addr<<3));
@@ -312,7 +315,7 @@ uint8_t SC16IS750::GPIOGetPinState(uint8_t pin_number)
     uint8_t temp_iostate;
 
     temp_iostate = ReadRegister(SC16IS750_REG_IOSTATE);
-    if ( temp_iostate & (0x01 << pin_number)== 0 ) {
+    if ( temp_iostate & ((0x01 << pin_number)== 0) ) {
       return 0;
     }
     return 1;
