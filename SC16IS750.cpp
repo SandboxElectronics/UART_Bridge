@@ -33,7 +33,9 @@ Please keep the above information when you use this code in your project.
 #endif
 
 
-SC16IS750::SC16IS750(SC16IS750_ComProtocol prtcl, uint8_t addr_sspin)
+SC16IS750::SC16IS750(SC16IS750_ComProtocol prtcl,
+                     uint8_t addr_sspin,
+                     unsigned long freq)
 {
     protocol = prtcl;
     if ( protocol == SC16IS750_ComProtocol::I2C ) {
@@ -43,6 +45,8 @@ SC16IS750::SC16IS750(SC16IS750_ComProtocol prtcl, uint8_t addr_sspin)
 	}
 	peek_flag = 0;
 //	timeout = 1000;
+
+  crystalFreq = freq;
 }
 
 
@@ -163,7 +167,7 @@ int16_t SC16IS750::SetBaudrate(uint32_t baudrate) //return error of baudrate par
         prescaler = 4;
     }
 
-    divisor = (SC16IS750_CRYSTCAL_FREQ/prescaler)/(baudrate*16);
+    divisor = (crystalFreq/prescaler)/(baudrate*16);
 
     temp_lcr = ReadRegister(SC16IS750_REG_LCR);
     temp_lcr |= 0x80;
@@ -176,7 +180,7 @@ int16_t SC16IS750::SetBaudrate(uint32_t baudrate) //return error of baudrate par
     WriteRegister(SC16IS750_REG_LCR,temp_lcr);
 
 
-    actual_baudrate = (SC16IS750_CRYSTCAL_FREQ/prescaler)/(16*divisor);
+    actual_baudrate = (crystalFreq/prescaler)/(16*divisor);
     error = ((float)actual_baudrate-baudrate)*1000/baudrate;
 #ifdef  SC16IS750_DEBUG_PRINT
     Serial.print("Desired baudrate: ");
