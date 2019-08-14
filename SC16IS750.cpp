@@ -21,7 +21,7 @@ Please keep the above information when you use this code in your project.
 
 
 //#define SC16IS750_DEBUG_PRINT
-#include <SC16IS750.h>
+#include "SC16IS750.h"
 #include <SPI.h>
 #include <Wire.h>
 
@@ -33,23 +33,27 @@ Please keep the above information when you use this code in your project.
 #endif
 
 
-SC16IS750::SC16IS750(uint8_t prtcl, uint8_t addr_sspin)
+SC16IS750::SC16IS750(SC16IS750_ComProtocol prtcl,
+                     uint8_t addr_sspin,
+                     unsigned long freq)
 {
     protocol = prtcl;
-    if ( protocol == SC16IS750_PROTOCOL_I2C ) {
+    if ( protocol == SC16IS750_ComProtocol::I2C ) {
 		device_address_sspin = (addr_sspin>>1);
 	} else {
 		device_address_sspin = addr_sspin;
 	}
 	peek_flag = 0;
 //	timeout = 1000;
+
+  crystalFreq = freq;
 }
 
 
 void SC16IS750::begin(uint32_t baud)
 {
     //Serial.println("1111111111111111");
-	if ( protocol == SC16IS750_PROTOCOL_I2C) {
+	if ( protocol == SC16IS750_ComProtocol::I2C) {
 	//Serial.println("22222222222222");
         WIRE.begin();
     } else {
@@ -88,6 +92,36 @@ int SC16IS750::read(void)
 size_t SC16IS750::write(uint8_t val)
 {
     WriteByte(val);
+
+    return 1; //we just wrote one byte
+}
+
+//NB: any character after the 64th will be discarded by the FIFO buffer
+void SC16IS750::writeString(const char* str)
+{
+    for (const char* ch = str; *ch != '\0'; ch++)
+        write((size_t)(*ch)); //write value to device
+}
+
+//NB: we're limited to 64 chars (bytes) by the size of the FIFO buffer
+//This function reads into a preallocated char[] to save on dynamic memory allocations
+void SC16IS750::readString()
+{
+	  int i = 0;
+    while (i < 64)
+    {
+        int datum = read();
+
+        if (datum == -1)
+        {
+            rxData[i] = 0;
+            break; //no more data
+        }
+		
+        else
+            rxData[i++] = (char)datum; //append to string
+            
+    };
 }
 
 void SC16IS750::pinMode(uint8_t pin, uint8_t i_o)
@@ -108,15 +142,16 @@ uint8_t SC16IS750::digitalRead(uint8_t pin)
 
 uint8_t SC16IS750::ReadRegister(uint8_t reg_addr)
 {
-    uint8_t result;
-	if ( protocol == SC16IS750_PROTOCOL_I2C ) {  // register read operation via I2C
-
+    uint8_t result = -1; //default value to clear warning - in fact we don't support other protocols
+    
+	  if ( protocol == SC16IS750_ComProtocol::I2C ){  // register read operation via I2C
 		WIRE.beginTransmission(device_address_sspin);
 		WIRE.write((reg_addr<<3));
 		WIRE.endTransmission(0);
 		WIRE.requestFrom(device_address_sspin,(uint8_t)1);
 		result = WIRE.read();
-	} else if (protocol == SC16IS750_PROTOCOL_SPI) {                                   //register read operation via SPI
+   
+	} else if (protocol == SC16IS750_ComProtocol::SPI) { //register read operation via SPI
 		::digitalWrite(device_address_sspin, LOW);
 		delayMicroseconds(10);
 		SPI.transfer(0x80|(reg_addr<<3));
@@ -131,7 +166,7 @@ uint8_t SC16IS750::ReadRegister(uint8_t reg_addr)
 
 void SC16IS750::WriteRegister(uint8_t reg_addr, uint8_t val)
 {
-    if ( protocol == SC16IS750_PROTOCOL_I2C ) {  // register read operation via I2C
+    if ( protocol == SC16IS750_ComProtocol::I2C ) {  // register read operation via I2C
 		WIRE.beginTransmission(device_address_sspin);
 		WIRE.write((reg_addr<<3));
 		WIRE.write(val);
@@ -163,7 +198,7 @@ int16_t SC16IS750::SetBaudrate(uint32_t baudrate) //return error of baudrate par
         prescaler = 4;
     }
 
-    divisor = (SC16IS750_CRYSTCAL_FREQ/prescaler)/(baudrate*16);
+    divisor = (crystalFreq/prescaler)/(baudrate*16);
 
     temp_lcr = ReadRegister(SC16IS750_REG_LCR);
     temp_lcr |= 0x80;
@@ -176,7 +211,7 @@ int16_t SC16IS750::SetBaudrate(uint32_t baudrate) //return error of baudrate par
     WriteRegister(SC16IS750_REG_LCR,temp_lcr);
 
 
-    actual_baudrate = (SC16IS750_CRYSTCAL_FREQ/prescaler)/(16*divisor);
+    actual_baudrate = (crystalFreq/prescaler)/(16*divisor);
     error = ((float)actual_baudrate-baudrate)*1000/baudrate;
 #ifdef  SC16IS750_DEBUG_PRINT
     Serial.print("Desired baudrate: ");
@@ -280,7 +315,7 @@ uint8_t SC16IS750::GPIOGetPinState(uint8_t pin_number)
     uint8_t temp_iostate;
 
     temp_iostate = ReadRegister(SC16IS750_REG_IOSTATE);
-    if ( temp_iostate & (0x01 << pin_number)== 0 ) {
+    if ( temp_iostate & ((0x01 << pin_number)== 0) ) {
       return 0;
     }
     return 1;

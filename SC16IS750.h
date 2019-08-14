@@ -97,24 +97,33 @@ Please keep the above information when you use this code in your project.
 
 //Application Related 
 
-#define     SC16IS750_CRYSTCAL_FREQ (14745600UL) 
-//#define 	SC16IS750_CRYSTCAL_FREQ (1843200UL)	  
-//#define     SC16IS750_CRYSTCAL_FREQ (16000000UL)    
-//#define     SC16IS750_DEBUG_PRINT   (0)
-#define     SC16IS750_PROTOCOL_I2C  (0)
-#define     SC16IS750_PROTOCOL_SPI  (1)
+//#define   SC16IS750_DEBUG_PRINT   (0)
 
-
-
+enum class SC16IS750_ComProtocol {SPI = 0, I2C = 1};
 
 class SC16IS750 : public Stream
 { 
     public:
-        SC16IS750(uint8_t prtcl = SC16IS750_PROTOCOL_I2C, uint8_t addr = SC16IS750_ADDRESS_AD);
+
+        //NB: we're limited to 64 chars (bytes) by the size of the FIFO buffer
+        char rxData[64]; //this uses a preallocated char array for reading strings from the bridge
+    
+        SC16IS750(SC16IS750_ComProtocol prtcl = SC16IS750_ComProtocol::I2C,
+                  uint8_t addr = SC16IS750_ADDRESS_AD,
+                  unsigned long freq = 12000000UL);
+        
         void begin(uint32_t baud);                               
-        int read();
-        size_t write(uint8_t val);
-        int available();
+
+		//Read/Write single values
+		int read();
+		size_t write(uint8_t val);
+		
+		//Read/Write strings
+		//NB: limited to 64 bytes (characters) long string - FIFO buffer limit
+        void writeString(const char* str);
+		void readString();
+        
+		int available();
         void pinMode(uint8_t pin, uint8_t io);
         void digitalWrite(uint8_t pin, uint8_t value);
         uint8_t digitalRead(uint8_t pin);
@@ -133,7 +142,8 @@ class SC16IS750 : public Stream
     
     private:
         uint8_t device_address_sspin;
-        uint8_t protocol;
+        SC16IS750_ComProtocol protocol;
+        unsigned long crystalFreq = 12000000UL;
 	//	uint32_t timeout;
         int16_t SetBaudrate(uint32_t baudrate);
         uint8_t ReadRegister(uint8_t reg_addr);
