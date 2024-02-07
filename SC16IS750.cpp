@@ -56,9 +56,11 @@ void SC16IS750::begin(uint32_t baud)
 	//Serial.println("3333333333333333333");
 		::pinMode(device_address_sspin, OUTPUT);
    	    ::digitalWrite(device_address_sspin, HIGH);
-		SPI.setDataMode(SPI_MODE0);
-		SPI.setClockDivider(SPI_CLOCK_DIV4);
-		SPI.setBitOrder(MSBFIRST);
+		//SPI.setDataMode(SPI_MODE0);
+		//SPI.setClockDivider(SPI_CLOCK_DIV4);
+		//SPI.setBitOrder(MSBFIRST);
+		// Previous 3 commands now replaced by SPI.beginTransaction() & as per Arduino docs
+		SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
 		SPI.begin();
 		//SPI.setClockDivider(32);
 
